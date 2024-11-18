@@ -3,14 +3,28 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 	"web-scraper/db"
 	"web-scraper/models"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/go-co-op/gocron"
 )
 
 func main() {
 	db.InitDB()
+	s := gocron.NewScheduler(time.Local)
+	_, err := s.Every(5).Minutes().Do(fetchAndSaveProducts)
+
+	if err != nil {
+		log.Fatalln("Failed job with error: ", err)
+		return
+	}
+
+	s.StartBlocking()
+}
+
+func fetchAndSaveProducts() {
 
 	res, err := http.Get("https://www.scrapingcourse.com/ecommerce/")
 
@@ -45,14 +59,4 @@ func main() {
 			log.Fatal("Failed to store product", err)
 		}
 	})
-
-	// byteBody, err := io.ReadAll(res.Body)
-
-	// if err != nil {
-	// 	log.Fatal("Failed to read the buffer")
-	// 	return
-	// }
-
-	// html := string(byteBody)
-	// fmt.Println(html)
 }
