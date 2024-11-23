@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 	"web-scraper/db"
 	"web-scraper/models"
@@ -21,8 +23,21 @@ func main() {
 	}
 	log.SetOutput(f)
 
+	var baseUrl = "https://www.scrapingcourse.com/ecommerce/page/"
+	var pages = [3]int{1, 2, 3}
+	var wg sync.WaitGroup
+
 	s := gocron.NewScheduler(time.Local)
-	_, err = s.Every(5).Minutes().Do(fetchAndSaveProducts)
+	_, err = s.Every(5).Minutes().Do(func() {
+		for i := 0; i < len(pages); i++ {
+			wg.Add(1)
+			url := fmt.Sprintf("%s%d", baseUrl, pages[i])
+			go fetchAndSaveProducts(url)
+			pages[i] = pages[i] + len(pages)
+		}
+
+		defer wg.Done()
+	})
 
 	if err != nil {
 		log.Fatalln("Failed job with error: ", err)
@@ -31,9 +46,10 @@ func main() {
 	s.StartBlocking()
 }
 
-func fetchAndSaveProducts() {
+func fetchAndSaveProducts(url string) {
 
-	res, err := http.Get("https://www.scrapingcourse.com/ecommerce/")
+	log.Println("Now Fetching: ", url)
+	res, err := http.Get(url)
 
 	if err != nil {
 		log.Fatalln("Failed to scrape website")
