@@ -2,13 +2,15 @@ package main
 
 import (
 	"net/http"
-	customerrors "scraper-api/customErrors"
+	"scraper-api/db"
 	"scraper-api/middlewares"
+	"scraper-api/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	db.InitDB()
 	server := gin.Default()
 
 	//Global Error Handler
@@ -20,10 +22,7 @@ func main() {
 		})
 	})
 
-	server.GET("/", func(ctx *gin.Context) {
-		err := customerrors.NewCustomError("dadadsads", http.StatusConflict)
-		ctx.Error(err)
-	})
+	routes.RegisterProductRoutes(server)
 
 	server.Run(":8000")
 }
